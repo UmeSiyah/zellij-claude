@@ -352,7 +352,7 @@ fn dir_name(cwd: &str) -> String {
 fn status_icon(status: &str) -> &'static str {
     match status {
         "starting" => "\u{1F680}",
-        "thinking" => "\u{23F3}",
+        "thinking" | "busy" => "\u{23F3}",
         "tool" => "\u{1F527}",
         "idle" => "\u{1F4A4}",
         "error" => "\u{274C}",
@@ -368,6 +368,7 @@ fn status_label(status: &str) -> &'static str {
     match status {
         "starting" => "starting",
         "thinking" => "thinking",
+        "busy" => "busy",
         "tool" => "running tool",
         "idle" => "idle",
         "error" => "error",

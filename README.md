@@ -25,6 +25,7 @@ Quickly see all your running Claude Code sessions across Zellij sessions, check 
 |------|--------|-------------|
 | 🚀 | Starting | Claude Code is initializing |
 | ⏳ | Thinking | Claude is processing your request |
+| ⏳ | Busy | Claude Code's own status, used when the hook is not installed |
 | 🔧 | Running tool | Claude is executing a tool |
 | 💤 | Idle | Session is waiting for input |
 | ⌨️ | Needs input | Claude is waiting for user input |
