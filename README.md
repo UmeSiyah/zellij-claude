@@ -4,6 +4,11 @@ A [Zellij](https://zellij.dev) plugin for managing and switching between [Claude
 
 Quickly see all your running Claude Code sessions across Zellij sessions, check their status at a glance, and jump to any one with a keystroke.
 
+> **Fork note:** this fork targets Linux. The session scan is a Nushell script
+> (`src/scan.nu`) that reads `/proc`, so it needs `nu` on `PATH` and no longer
+> needs `jq`. It never deletes files in `~/.claude/sessions/`: dead PIDs are
+> skipped, since that folder may be shared by several machines.
+
 ![zellij-claude](assets/screenshot.png)
 
 ## Features
@@ -77,7 +82,7 @@ LaunchOrFocusPlugin "file:target/wasm32-wasip1/release/zellij-claude.wasm" {
 
 ## How It Works
 
-The plugin discovers Claude Code sessions by scanning `~/.claude/sessions/` for status files. It matches sessions to Zellij panes by inspecting environment variables of running processes. When you select a session, it switches to the correct Zellij session, tab, and pane.
+The plugin discovers Claude Code sessions by scanning `~/.claude/sessions/` for status files. It matches sessions to Zellij panes by reading the `ZELLIJ_SESSION_NAME` and `ZELLIJ_PANE_ID` variables from `/proc/<pid>/environ`, walking up the parent processes when needed. When you select a session, it switches to the correct Zellij session, tab, and pane.
 
 Sessions can also push status updates to the plugin via Zellij's pipe mechanism:
 

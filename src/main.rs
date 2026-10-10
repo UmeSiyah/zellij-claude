@@ -2,6 +2,8 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 use zellij_tile::prelude::*;
 
+const SCAN_SCRIPT: &str = include_str!("scan.nu");
+
 #[derive(Default)]
 struct State {
     sessions: BTreeMap<u32, ClaudeSession>,
@@ -167,41 +169,7 @@ impl State {
         let mut context = BTreeMap::new();
         context.insert("type".to_string(), "scan".to_string());
 
-        run_command(
-            &[
-                "bash",
-                "-c",
-                concat!(
-                    "dir=\"$HOME/.claude/sessions\"; ",
-                    "[ -d \"$dir\" ] || exit 0; ",
-                    "for f in \"$dir\"/*.json; do ",
-                    "  [ -f \"$f\" ] || continue; ",
-                    "  pid=$(basename \"$f\" .json); ",
-                    "  kill -0 \"$pid\" 2>/dev/null || { rm -f \"$f\" \"$dir/${pid}.status\"; continue; }; ",
-                    "  status=\"idle\"; ",
-                    "  sf=\"$dir/${pid}.status\"; ",
-                    "  [ -f \"$sf\" ] && status=$(cat \"$sf\"); ",
-                    "  zs=\"\"; zp=\"\"; ",
-                    "  env_line=$(ps -E -p \"$pid\" -o command= 2>/dev/null); ",
-                    "  zs=$(echo \"$env_line\" | grep -o 'ZELLIJ_SESSION_NAME=[^ ]*' | head -1 | cut -d= -f2); ",
-                    "  zp=$(echo \"$env_line\" | grep -o 'ZELLIJ_PANE_ID=[^ ]*' | head -1 | cut -d= -f2); ",
-                    "  if [ -z \"$zs\" ]; then ",
-                    "    ppid_cur=$pid; ",
-                    "    for _ in 1 2 3 4 5 6 7 8; do ",
-                    "      ppid_cur=$(ps -o ppid= -p \"$ppid_cur\" 2>/dev/null | tr -d ' '); ",
-                    "      [ -z \"$ppid_cur\" ] || [ \"$ppid_cur\" = \"1\" ] && break; ",
-                    "      env_line=$(ps -E -p \"$ppid_cur\" -o command= 2>/dev/null); ",
-                    "      zs=$(echo \"$env_line\" | grep -o 'ZELLIJ_SESSION_NAME=[^ ]*' | head -1 | cut -d= -f2); ",
-                    "      zp=$(echo \"$env_line\" | grep -o 'ZELLIJ_PANE_ID=[^ ]*' | head -1 | cut -d= -f2); ",
-                    "      [ -n \"$zs\" ] && break; ",
-                    "    done; ",
-                    "  fi; ",
-                    "  jq -c --arg status \"$status\" --arg zs \"$zs\" --arg zp \"$zp\" '. + {status: $status, zellij_session: $zs} + (if $zp != \"\" then {zellij_pane_id: ($zp | tonumber)} else {} end)' \"$f\"; ",
-                    "done",
-                ),
-            ],
-            context,
-        );
+        run_command(&["nu", "-n", "-c", SCAN_SCRIPT], context);
     }
 
     fn handle_scan_result(&mut self, _exit_code: Option<i32>, stdout: &[u8]) {
@@ -221,7 +189,7 @@ impl State {
             }
         }
 
-        // Remove sessions no longer in scan (dead PIDs cleaned up by the script)
+        // Remove sessions no longer in scan (the script skips dead PIDs)
         self.sessions.retain(|pid, _| seen_pids.contains(pid));
         self.rebuild_sorted();
     }
